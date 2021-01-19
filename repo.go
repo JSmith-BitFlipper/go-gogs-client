@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"webauthn/protocol"
 )
 
 // Permission represents a API permission.
@@ -100,8 +102,12 @@ func (c *Client) GetRepo(owner, reponame string) (*Repository, error) {
 }
 
 // DeleteRepo deletes a repository of user or organization.
-func (c *Client) DeleteRepo(owner, repo string) error {
-	_, err := c.getResponse("DELETE", fmt.Sprintf("/repos/%s/%s", owner, repo), nil, nil)
+func (c *Client) DeleteRepo(owner, repo string, opt WebauthnContainer) error {
+	body, err := json.Marshal(&opt)
+	if err != nil {
+		return err
+	}
+	_, err = c.getResponse("DELETE", fmt.Sprintf("/repos/%s/%s", owner, repo), jsonHeader, bytes.NewReader(body))
 	return err
 }
 
@@ -169,4 +175,9 @@ func (c *Client) EditWiki(owner, repo string, opt EditWikiOption) error {
 func (c *Client) MirrorSync(owner, repo string) error {
 	_, err := c.getResponse("POST", fmt.Sprintf("/repos/%s/%s/mirror-sync", owner, repo), jsonHeader, nil)
 	return err
+}
+
+func (c *Client) Repo_GenericWebauthnBegin() (*protocol.CredentialAssertion, error) {
+	options := &protocol.CredentialAssertion{}
+	return options, c.getParsedResponse("POST", "/repos/generic_webauthn_begin", nil, nil, options)
 }
